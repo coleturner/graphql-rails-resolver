@@ -71,6 +71,14 @@ This solution addresses code re-use, however this series of conditionals do not 
 ## Hello "Active" Resolver:
 **Out with imperative, in with declarative.**
 
+To begin, we install the gem by adding it to our `Gemfile`:
+
+`
+gem 'graphql-rails-resolver'
+`
+
+This will load a class by the name of `GraphQL::Rails::Resolver`
+
 Take the Resolver from the previous example. Using `GraphQL::Rails::Resolver`, we inherit and use declarations for arguments and how they will be resolved. These declarations will be mapped to the attributes on the resolved model.
 
 ```
