@@ -158,5 +158,5 @@ resolve_scope :is_private, -> (args) { args[:is_public] == false }
 
 
 # Credits
-- Cole Turner ([@colepatrickturner](/colepatrickturner))
-- Peter Salanki ([@salanki](/salanki))
+- Cole Turner ([@colepatrickturner](https://github.com/colepatrickturner))
+- Peter Salanki ([@salanki](https://github.com/salanki))
