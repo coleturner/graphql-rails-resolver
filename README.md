@@ -1,7 +1,7 @@
 # GraphQL::Rails::Resolver (graphql-rails-resolver)
-A utility for ease graphql-ruby integration into a Rails project. This resolver offers a declarative approach to resolving Field arguments in a Rails environment.
+A utility to ease graphql-ruby integration into a Rails project. This resolver offers a declarative approach to resolving Field arguments in a Rails environment.
 
-# How it works:
+# How it works
 `GraphQL::Rails::Resolver` serves as a base class for your GraphQL Ruby schema. When a resolver inherits from this base class, you can easily map arguments in a GraphQL Field to an attribute on an ActiveRecord model or a custom method.
 
 ## Why?
@@ -68,7 +68,7 @@ end
 This solution addresses code re-use, however this series of conditionals do not allow you to resolve more than one argument, and it may become difficult to maintain this imperative approach.
 
 
-## Hello "Active" Resolver:
+## Hello "Active" Resolver
 **Out with imperative, in with declarative.**
 
 To begin, we install the gem by adding it to our `Gemfile`:
