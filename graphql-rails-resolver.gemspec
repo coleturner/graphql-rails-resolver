@@ -3,7 +3,7 @@ require 'graphql/rails/resolver'
 
 Gem::Specification.new do |s|
   s.name        = 'graphql-rails-resolver'
-  s.version     = GraphQL::Rails::ActiveResolver::VERSION
+  s.version     = GraphQL::Rails::Resolver::VERSION
   s.date        = Date.today.to_s
   s.summary     = "GraphQL + Rails integration for Field Resolvers."
   s.description = "A utility for ease graphql-ruby integration into a Rails project."
