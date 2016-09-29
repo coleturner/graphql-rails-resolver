@@ -1,7 +1,9 @@
 module GraphQL
   module Rails
     class Resolver
-      VERSION = '0.1.2'
+      VERSION = '0.1.3'
+
+      attr_accessor :resolvers
 
       def initialize(callable=nil)
         unless callable.nil?
@@ -12,7 +14,7 @@ module GraphQL
         @obj = nil
         @args = nil
         @ctx = nil
-        @resolvers = {}
+        @resolvers = self.class.resolvers
       end
 
       def call(obj, args, ctx)
@@ -29,7 +31,7 @@ module GraphQL
 
         @resolvers.each do |field,method|
           if args.key? field
-            method
+            @result = method.call(@result, args[field])
           end
         end
 
@@ -75,28 +77,6 @@ module GraphQL
         "::#{self.class.name.demodulize}".constantize
       end
 
-      def self.resolve(field, method)
-        self.class_eval do
-          @resolvers[field] = method
-        end
-      end
-
-      def self.resolve_where(field)
-        self.class_eval do
-          resolve(field, Proc.new {
-            @result = @result.where(field, @args[field])
-          })
-        end
-      end
-
-      def self.resolve_method(field)
-        self.class_eval do
-          resolve(field, Proc.new {
-            send(field, @args[field])
-          })
-        end
-      end
-
       def lookup_id(value)
         if is_global_id(value)
           type_name, id = NodeIdentification.from_global_id(value)
@@ -112,7 +92,49 @@ module GraphQL
         end
       end
 
+      class << self
 
+        def resolvers
+          @resolvers ||= {}
+          @resolvers
+        end
+
+        def resolve(field, method)
+          @resolvers ||= {}
+          @resolvers[field] = method
+        end
+
+        def resolve_where(field)
+          resolve(field, lambda { |obj, value|
+            where = {}
+            where[field] = value
+
+            obj.where(where)
+          })
+        end
+
+        def resolve_scope(field, test=nil, scope_name: nil, with_value: false)
+          test = lambda { |value| value.present? } if test.nil?
+          scope_name = field if scope_name.nil?
+
+          resolve(field, lambda { |obj, value|
+            args = []
+            args.push(value) if with_value
+
+            if test.call(value)
+              obj.send(scope_name, *args)
+            else
+              obj
+            end
+          })
+        end
+
+        def resolve_method(field)
+          resolve(field, lambda { |obj, value|
+            obj.send(field, value)
+          })
+        end
+      end
     end
   end
 end

@@ -16,6 +16,7 @@ class Post < ApplicationRecord
 
   scope :is_public, -> { where(is_public: true) }
   scope :is_private, -> { where(is_public: false) }
+  scope :featured, -> (value) { where(created_at: value) }
 
   def tags
      ["hello", "world"]
@@ -28,11 +29,11 @@ The standard implementation for resolving a `Post` is as follows:
 
 ```
 field :post, PostType do
-    argument :is_public, types.Boolean, default_value: true
- 	resolve -> (obj, args, ctx) {
-    	post.is_public if args[:is_public]
-        post.is_private unless args[:is_public]
-    }
+  argument :is_public, types.Boolean, default_value: true
+  resolve -> (obj, args, ctx) {
+    post.is_public if args[:is_public]
+    post.is_private unless args[:is_public]
+  }
 end
 ```
 
@@ -43,8 +44,8 @@ Using the pattern from this article, our Field becomes much simpler:
 **/app/graph/types/query_type.rb**
 ```
 field :post, PostType do
-    argument :is_public, types.Boolean, default_value: true
- 	resolve Resolvers::Post.new
+  argument :is_public, types.Boolean, default_value: true
+  resolve Resolvers::Post.new
 end
 ```
 
@@ -65,7 +66,7 @@ module Resolvers
   end
 end
 ```
-This solution addresses code re-use, however this series of conditionals do not allow you to resolve more than one argument, and it may become difficult to maintain this imperative approach.
+This solution addresses code re-use, but these series of conditionals do not allow you to resolve more than one argument, and it may become difficult to maintain this imperative approach.
 
 
 ## Hello "Active" Resolver
@@ -95,6 +96,18 @@ class Post < GraphQL::Rails::Resolver
   resolve_where :created_at
   resolve_where :updated_at
 
+  # Resolve :featured argument with default test: if argument `featured` is present
+  resolve_scope :featured
+
+  # Same resolution as the line above, but send the value to the scope function
+  resolve_scope :featured, :with_value => true
+
+  # Resolve :featured scope if it passes custom argument test
+  resolve_scope :featured, -> (value) { value == :today }
+
+  # Resolve :is_public argument with a different scope name
+  resolve_scope :is_public, -> (value) { value != true }, :scope_name => :is_private
+
   def is_public(value)
     @result.is_public if value
     @result.is_private unless value
@@ -103,13 +116,15 @@ class Post < GraphQL::Rails::Resolver
 end
 ```
 
-In the example above, there are two declarations:
+In the example above, there are three declarations:
 
 `resolve_where` is a declarative approach using `ActiveRecord.where` to resolve arguments.
 
-`resolve_method` is an imperative approach that's useful for using Model scopes or custom resolution.
+`resolve_scope` is an declarative way to call scopes on a model where a custom test for the argument can be specified with a closure.
+- Use `with_value` to send the argument value to the scope closure.
+- Use `scope_name` to map an argument to a scope by another name.
 
-[Help make scopes declarative!](#making-scopes-declarative)
+`resolve_method` is an imperative approach that allows completely custom resolution.
 
 
 
@@ -131,8 +146,8 @@ end
 ```
 
 
-### Override Default Resolution
-The default behavior is to use `Model.all` to seed the resolution. This seed can be changed by providing a block or lambda to the class instance:
+### Override Default Scope
+The default behavior is to use `Model.all` to scope the resolution. This scope can be changed by providing a block or lambda to the class instance:
 ```
 Resolvers::Post.new(Proc.new {
 	::Post.where(:created_at => ...)
@@ -141,21 +156,7 @@ Resolvers::Post.new(Proc.new {
 
 
 # Needs Help
-I wanted to release this utility for the hopes of sparking interest in Rails integration with `graphql-ruby`.
-
-If you wish to contribute to this project, any pull request is warmly welcomed. If time permits, I will continue to update this project to achieve the following:
-
-### [Making Scopes Declarative](#making-scopes-declarative):
-For first release, scopes can only be resolved using `resolve_method`. The goal for further development is to stop using `resolve_method` and adapt other methods to facilitate resolution.
-
-The current syntax planned for scope resolution is as follows, where the argument is passed to the scope:
-
-```
-resolve_scope :is_public, -> (args) { args[:is_public] == true }
-resolve_scope :is_private, -> (args) { args[:is_public] == false }
-```
-
-
+I wanted to release this utility for the hopes of sparking interest in Rails integration with `graphql-ruby`. If you wish to contribute to this project, any pull request is warmly welcomed. 
 
 # Credits
 - Cole Turner ([@colepatrickturner](https://github.com/colepatrickturner))
