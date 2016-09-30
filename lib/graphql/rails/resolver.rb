@@ -1,7 +1,7 @@
 module GraphQL
   module Rails
     class Resolver
-      VERSION = '0.1.3'
+      VERSION = '0.1.4'
 
       attr_accessor :resolvers
 
@@ -15,6 +15,7 @@ module GraphQL
         @args = nil
         @ctx = nil
         @resolvers = self.class.resolvers
+        @id_field = self.class.id_field
       end
 
       def call(obj, args, ctx)
@@ -25,13 +26,62 @@ module GraphQL
         @result = @callable.call(obj, args, ctx)
 
         # If there's an ID type, offer ID resolution_strategy
-        if has_id_field and args.key? :id
-          lookup_id(args[:id])
+        if has_id_argument and args.key? @id_field
+          lookup_id(args[@id_field])
         end
 
-        @resolvers.each do |field,method|
+        @resolvers.each do |field,resolvers|
           if args.key? field
-            @result = method.call(@result, args[field])
+            value = args[field]
+
+            resolvers.each do |method, params|
+              # Match scopes
+              if params.key? :scope
+                scope_name = params[:scope]
+                scope_name = scope_name.call(value) if scope_name.respond_to? :call
+
+                scope_args = []
+                scope_args.push(value) if params.key? :with_value && params[:with_value] == true
+
+                @result = @result.send(scope_name) unless scope_name.nil?
+              # Match custom methods
+              elsif params.key? :method
+                @result = send(params[:method], value)
+              elsif method.present?
+                # Match first param
+                if method.respond_to? :call
+                  # Match implicit blocks
+                  @result = method.call(value)
+                elsif self.respond_to? method
+                  # Match method name to current resolver class
+                  @result = send(method, value)
+                elsif @result.respond_to? method
+                  # Match method name to object
+                  @result = @result.send(method, value)
+                else
+                  raise ArgumentError, "Unable to resolve parameter of type #{method.class} in #{self}"
+                end
+              elsif params.size < 1
+                if self.respond_to? field
+                  @result = send(field, value)
+                elsif @result.method_defined? field and params[:where].present? == false
+                  @result = @result.send(field, value)
+                else
+                  attribute =
+                    if params[:where].present?
+                      params[:where]
+                    else
+                      field
+                    end
+
+                  hash = {}
+                  hash[attribute] = value
+                  @result = @result.where(hash)
+                end
+              else
+                raise ArgumentError, "Unable to resolve field #{field} in #{self}"
+              end
+            end
           end
         end
 
@@ -57,8 +107,22 @@ module GraphQL
         @ctx.ast_node.name
       end
 
+      def has_id_argument
+        @ctx.irep_node.definitions.any? do |type_defn, field_defn|
+          if field_defn.name === field_name
+            field_defn.arguments.any? do |k,v|
+              v.type == ::GraphQL::ID_TYPE or
+              (v.type.kind == ::GraphQL::TypeKinds::LIST and v.type.of_type == ::GraphQL::ID_TYPE)
+            end
+          else
+            false
+          end
+        end
+      end
+
       def has_id_field
-        @ctx.irep_node.children.any? {|x| x[1].return_type == GraphQL::ID_TYPE }
+        warn "[DEPRECATION] `has_id_field` is deprecated.  Please use `has_id_argument` instead."
+        has_id_argument
       end
 
       def connection?
@@ -77,62 +141,63 @@ module GraphQL
         "::#{self.class.name.demodulize}".constantize
       end
 
-      def lookup_id(value)
+      def to_model_id(value)
         if is_global_id(value)
           type_name, id = NodeIdentification.from_global_id(value)
           constantized = "::#{type_name}".constantize
 
           if constantized == model
-            @result = @result.where(:id => id)
+            id
           else
             nil
           end
         else
-          @result = @result.where(:id => value)
+          value
         end
       end
 
+      def lookup_id(value)
+        if value.kind_of? Array
+          value = value.map { |v| to_model_id(v) }.compact
+        end
+
+        @result = @result.where(:id => value)
+      end
+
       class << self
+        @@id_field = :id
+
+        def id_field
+          @@id_field
+        end
 
         def resolvers
           @resolvers ||= {}
           @resolvers
         end
 
-        def resolve(field, method)
+        def resolve(field, definition=nil, **otherArgs)
           @resolvers ||= {}
-          @resolvers[field] = method
+          @resolvers[field] ||= []
+          @resolvers[field].push([definition, otherArgs])
         end
 
         def resolve_where(field)
-          resolve(field, lambda { |obj, value|
-            where = {}
-            where[field] = value
-
-            obj.where(where)
-          })
+          warn "[DEPRECATION] `resolve_where` is deprecated.  Please use `resolve` instead."
+          resolve(field)
         end
 
         def resolve_scope(field, test=nil, scope_name: nil, with_value: false)
+          warn "[DEPRECATION] `resolve_scope` is deprecated.  Please use `resolve` instead."
           test = lambda { |value| value.present? } if test.nil?
           scope_name = field if scope_name.nil?
 
-          resolve(field, lambda { |obj, value|
-            args = []
-            args.push(value) if with_value
-
-            if test.call(value)
-              obj.send(scope_name, *args)
-            else
-              obj
-            end
-          })
+          resolve(field, :scope => -> (value) { test.call(value) ? scope_name : nil }, :with_value => with_value)
         end
 
         def resolve_method(field)
-          resolve(field, lambda { |obj, value|
-            obj.send(field, value)
-          })
+          warn "[DEPRECATION] `resolve_method` is deprecated.  Please use `resolve` instead."
+          resolve(field)
         end
       end
     end

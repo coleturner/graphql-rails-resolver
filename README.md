@@ -88,43 +88,44 @@ Take the Resolver from the previous example. Using `GraphQL::Rails::Resolver`, w
 class Post < GraphQL::Rails::Resolver
   # ID argument is resolved in base class
 
-  # Resolve :is_public to a class method
-  resolve_method :is_public
-
   # Resolve :title, :created_at, :updated_at to Post.where() arguments
-  resolve_where :title
-  resolve_where :created_at
-  resolve_where :updated_at
+  resolve :title
+  resolve :createdAt, :where => :created_at
+  resolve :updatedAt, :where => :updated_at
 
   # Resolve :featured argument with default test: if argument `featured` is present
-  resolve_scope :featured
+  resolve :featured, :scope => :featured
 
   # Same resolution as the line above, but send the value to the scope function
-  resolve_scope :featured, :with_value => true
+  resolve :featured, :scope => :featured, :with_value => true
 
-  # Resolve :featured scope if it passes custom argument test
-  resolve_scope :featured, -> (value) { value == :today }
+  # Resolve :featured scope to a dynamic scope name
+  resolve :is_public, :scope => -> (value) { value == true ? :is_public : :is_private}
 
-  # Resolve :is_public argument with a different scope name
-  resolve_scope :is_public, -> (value) { value != true }, :scope_name => :is_private
+  # Resolve :is_public to a class method
+  resolve :custom_arg, :custom_resolve_method
 
-  def is_public(value)
-    @result.is_public if value
-    @result.is_private unless value
+  def custom_resolve_method(value)
+    ...
   end
+
+  # Resolve :is_public to a method on the model object
+  resolve :custom_arg, :model_obj_method
 
 end
 ```
 
-In the example above, there are three declarations:
+In the examples above, the three primary arguments to `resolve` are:
 
-`resolve_where` is a declarative approach using `ActiveRecord.where` to resolve arguments.
+`resolve :argument_name, ...`
 
-`resolve_scope` is an declarative way to call scopes on a model where a custom test for the argument can be specified with a closure.
+`where` to specify another attribute.
+
+`scope` to specify a scope on the model:
+- `scope` accepts string/symbol "scope name" or a closure that returns a scope name or `nil`
 - Use `with_value` to send the argument value to the scope closure.
-- Use `scope_name` to map an argument to a scope by another name.
 
-`resolve_method` is an imperative approach that allows completely custom resolution.
+Alternatively you can specify a symbol representing a method name: (ie: `resolve :arg_1, :custom_method`). The resolver will use it's own method if it exists, or else it will call the method on the object itself.
 
 
 
@@ -156,7 +157,7 @@ Resolvers::Post.new(Proc.new {
 
 
 # Needs Help
-I wanted to release this utility for the hopes of sparking interest in Rails integration with `graphql-ruby`. If you wish to contribute to this project, any pull request is warmly welcomed. 
+I wanted to release this utility for the hopes of sparking interest in Rails integration with `graphql-ruby`. If you wish to contribute to this project, any pull request is warmly welcomed.
 
 # Credits
 - Cole Turner ([@colepatrickturner](https://github.com/colepatrickturner))
