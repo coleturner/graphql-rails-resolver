@@ -1,7 +1,7 @@
 module GraphQL
   module Rails
     class Resolver
-      VERSION = '0.2.0'
+      VERSION = '0.1.6'
 
       attr_accessor :resolvers
 
@@ -27,7 +27,7 @@ module GraphQL
 
         # If there's an ID type, offer ID resolution_strategy
         if has_id_argument and args.key? @id_field
-          lookup_id(args[@id_field])
+          @result = resolve_id(args[@id_field])
         end
 
         @resolvers.each do |field,resolvers|
@@ -141,11 +141,11 @@ module GraphQL
         "::#{self.class.name.demodulize}".constantize
       end
 
-      def object_from_id(value)
+      def resolve_id(value)
         if value.kind_of? Array
-          value.map { |v| @ctx.schema.object_from_id(v) }.compact
+          value.compact.map { |v| @ctx.schema.object_from_id(v, @ctx) }.compact
         else
-          @ctx.schema.object_from_id(value)
+          @ctx.schema.object_from_id(value, @ctx)
         end
       end
 
