@@ -1,7 +1,7 @@
 module GraphQL
   module Rails
     class Resolver
-      VERSION = '0.1.5'
+      VERSION = '0.1.6'
 
       attr_accessor :resolvers
 
@@ -86,7 +86,6 @@ module GraphQL
         end
 
         result = payload
-        puts "Payload = #{result}"
 
         @obj = nil
         @args = nil
