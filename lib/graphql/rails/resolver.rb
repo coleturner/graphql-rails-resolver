@@ -1,7 +1,7 @@
 module GraphQL
   module Rails
     class Resolver
-      VERSION = '0.1.4'
+      VERSION = '0.1.5'
 
       attr_accessor :resolvers
 
@@ -62,9 +62,9 @@ module GraphQL
                   raise ArgumentError, "Unable to resolve parameter of type #{method.class} in #{self}"
                 end
               elsif params.size < 1
-                if self.respond_to? field
+                if self.respond_to? field and params[:where].present? == false
                   @result = send(field, value)
-                elsif @result.method_defined? field and params[:where].present? == false
+                elsif @result.respond_to? field and params[:where].present? == false
                   @result = @result.send(field, value)
                 else
                   attribute =
@@ -86,6 +86,7 @@ module GraphQL
         end
 
         result = payload
+        puts "Payload = #{result}"
 
         @obj = nil
         @args = nil
@@ -97,7 +98,7 @@ module GraphQL
       def payload
         # Return all results if it's a list or a connection
         if connection? or list?
-          @result.all
+          @result
         else
           @result.first
         end

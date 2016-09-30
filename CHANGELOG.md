@@ -1,6 +1,9 @@
 # GraphQL::Rails::Resolver
 ## CHANGELOG
 
+### Version 0.1.5
+Fixed `where` method resolving superseding attribute.
+
 ### Version 0.1.4
 Added `resolve` with parameters
 Deprecates `resolve_where` and `resolve_scope`
