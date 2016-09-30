@@ -141,33 +141,19 @@ module GraphQL
         "::#{self.class.name.demodulize}".constantize
       end
 
-      def to_model_id(value)
-        if is_global_id(value)
-          type_name, id = NodeIdentification.from_global_id(value)
-          constantized = "::#{type_name}".constantize
-
-          if constantized == model
-            id
-          else
-            nil
-          end
-        else
-          value
-        end
-      end
-
-      def lookup_id(value)
+      def object_from_id(value)
         if value.kind_of? Array
-          value = value.map { |v| to_model_id(v) }.compact
+          value.map { |v| @ctx.schema.object_from_id(v) }.compact
+        else
+          @ctx.schema.object_from_id(value)
         end
-
-        @result = @result.where(:id => value)
       end
 
       class << self
         @@id_field = :id
 
-        def id_field
+        def id_field(value=nil)
+          @@id_field = value if value.present?
           @@id_field
         end
 

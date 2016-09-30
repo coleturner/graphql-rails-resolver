@@ -139,9 +139,9 @@ end
 ```
 
 ### Find Model by ID
-`GraphQL::Rails::Resolver` includes the ability to resolve a model by ID. Using the following method, by default the resolver will find a model by **NodeIdentification.from_global_id(value)** or **Model.where(:id => value)**. This means a model can be resolved by Global ID or Integer ID.
+`GraphQL::Rails::Resolver` includes the ability to resolve an object by ID (or a list of ID types). Using the following method, by default the resolver will find a model by **Schema.object_from_id(value)**.
 ```
-def lookup_id(value)
+def object_from_id(value=...)
   ...
 end
 ```
