@@ -1,6 +1,12 @@
 # GraphQL::Rails::Resolver
 ## CHANGELOG
 
+### Version 0.2.0
+Update to support GraphQL 0.19.0
+
+Removes `to_model_id` and `lookup_id` functions. This functionality should be decided on the application level via `Schema.object_from_id`
+Uses schema functions to resolve objects.
+
 ### Version 0.1.5
 Fixed `where` method resolving superseding attribute.
 
