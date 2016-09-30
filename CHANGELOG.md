@@ -1,6 +1,9 @@
 # GraphQL::Rails::Resolver
 ## CHANGELOG
 
+### Version 0.2.1
+Added `resolve_id` that resolves a single or list of ID type objects.
+
 ### Version 0.2.0
 Update to support GraphQL 0.19.0
 
