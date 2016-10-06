@@ -1,7 +1,7 @@
 module GraphQL
   module Rails
     class Resolver
-      VERSION = '0.2.1'
+      VERSION = '0.2.3'
 
       attr_accessor :resolvers
 
@@ -43,7 +43,7 @@ module GraphQL
                 scope_args = []
                 scope_args.push(value) if params.key? :with_value && params[:with_value] == true
 
-                @result = @result.send(scope_name) unless scope_name.nil?
+                @result = @result.send(scope_name, *scope_args) unless scope_name.nil?
               # Match custom methods
               elsif params.key? :method
                 @result = send(params[:method], value)

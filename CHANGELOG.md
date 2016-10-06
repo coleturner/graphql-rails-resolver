@@ -1,6 +1,12 @@
 # GraphQL::Rails::Resolver
 ## CHANGELOG
 
+### Version 0.2.2
+Fixed arguments to :scope resolution
+
+### Version 0.2.2
+Changed dependency version to optimistic.
+
 ### Version 0.2.1
 Added `resolve_id` that resolves a single or list of ID type objects.
 

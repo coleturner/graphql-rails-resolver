@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.homepage    = 'http://rubygems.org/gems/graphql-rails-resolver'
   s.license     = 'MIT'
 
-  s.add_runtime_dependency "graphql", "~> 0.19.0"
+  s.add_runtime_dependency "graphql", ">= 0.19.0"
   s.add_development_dependency "activerecord"
   s.required_ruby_version = '>= 2.3.0'
 end
