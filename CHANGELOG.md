@@ -1,6 +1,11 @@
 # GraphQL::Rails::Resolver
 ## CHANGELOG
 
+### Version 0.2.4
+Adds ID resolution for non-primary ID field arguments
+Adds `get_field_args` to get type declarations for arguments
+Adds `get_arg_type`, `is_field_id_type?`, and `is_arg_id_type?`
+
 ### Version 0.2.2
 Fixed arguments to :scope resolution
 

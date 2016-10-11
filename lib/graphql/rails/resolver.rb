@@ -1,7 +1,7 @@
 module GraphQL
   module Rails
     class Resolver
-      VERSION = '0.2.3'
+      VERSION = '0.2.4'
 
       attr_accessor :resolvers
 
@@ -26,13 +26,13 @@ module GraphQL
         @result = @callable.call(obj, args, ctx)
 
         # If there's an ID type, offer ID resolution_strategy
-        if has_id_argument and args.key? @id_field
+        if has_id_argument? and args.key? @id_field
           @result = resolve_id(args[@id_field])
         end
 
-        @resolvers.each do |field,resolvers|
-          if args.key? field
-            value = args[field]
+        @resolvers.each do |arg,resolvers|
+          if args.key? arg
+            value = args[arg]
 
             resolvers.each do |method, params|
               # Match scopes
@@ -62,16 +62,20 @@ module GraphQL
                   raise ArgumentError, "Unable to resolve parameter of type #{method.class} in #{self}"
                 end
               elsif params.size < 1
-                if self.respond_to? field and params[:where].present? == false
-                  @result = send(field, value)
-                elsif @result.respond_to? field and params[:where].present? == false
-                  @result = @result.send(field, value)
+                if is_arg_id_type? arg
+                  value = resolve_id(value)
+                end
+
+                if self.respond_to? arg and params[:where].present? == false
+                  @result = send(arg, value)
+                elsif @result.respond_to? arg and params[:where].present? == false
+                  @result = @result.send(arg, value)
                 else
                   attribute =
                     if params[:where].present?
                       params[:where]
                     else
-                      field
+                      arg
                     end
 
                   hash = {}
@@ -79,7 +83,7 @@ module GraphQL
                   @result = @result.where(hash)
                 end
               else
-                raise ArgumentError, "Unable to resolve field #{field} in #{self}"
+                raise ArgumentError, "Unable to resolve argument #{arg} in #{self}"
               end
             end
           end
@@ -107,12 +111,11 @@ module GraphQL
         @ctx.ast_node.name
       end
 
-      def has_id_argument
+      def has_id_argument?
         @ctx.irep_node.definitions.any? do |type_defn, field_defn|
           if field_defn.name === field_name
             field_defn.arguments.any? do |k,v|
-              v.type == ::GraphQL::ID_TYPE or
-              (v.type.kind == ::GraphQL::TypeKinds::LIST and v.type.of_type == ::GraphQL::ID_TYPE)
+              is_field_id_type?(v.type)
             end
           else
             false
@@ -120,9 +123,14 @@ module GraphQL
         end
       end
 
+      def has_id_argument
+        warn "[DEPRECATION] `has_id_argument` is deprecated.  Please use `has_id_argument?` instead."
+        has_id_argument?
+      end
+
       def has_id_field
         warn "[DEPRECATION] `has_id_field` is deprecated.  Please use `has_id_argument` instead."
-        has_id_argument
+        has_id_argument?
       end
 
       def connection?
@@ -131,6 +139,24 @@ module GraphQL
 
       def list?
         @ctx.irep_node.definitions.all? { |type_defn, field_defn| field_defn.type.kind.eql?(GraphQL::TypeKinds::LIST) }
+      end
+
+      def get_field_args
+        @ctx.irep_node.parent.return_type.get_field(@ctx.irep_node.definition_name).arguments
+      end
+
+      def get_arg_type(key)
+        args = get_field_args
+        args[key].type
+      end
+
+      def is_field_id_type?(field)
+         field == ::GraphQL::ID_TYPE or
+              (field.kind == ::GraphQL::TypeKinds::LIST and field.of_type == ::GraphQL::ID_TYPE)
+      end
+
+      def is_arg_id_type?(key)
+         is_field_id_type?(get_arg_type(key))
       end
 
       def model
