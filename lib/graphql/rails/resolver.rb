@@ -41,7 +41,7 @@ module GraphQL
                 scope_name = scope_name.call(value) if scope_name.respond_to? :call
 
                 scope_args = []
-                scope_args.push(value) if params.key? :with_value && params[:with_value] == true
+                scope_args.push(value) if params.key? :with_value and params[:with_value] == true
 
                 @result = @result.send(scope_name, *scope_args) unless scope_name.nil?
               # Match custom methods
