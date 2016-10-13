@@ -10,7 +10,20 @@ module GraphQL
           raise ArgumentError, "Resolver requires a callable type or nil" unless callable.respond_to? :call
         end
 
-        @callable = callable || Proc.new { model.all }
+        @callable =
+          if callable.present?
+            callable
+          else
+            Proc.new { |obj|
+              subfield = model.name.underscore.pluralize
+              if obj.respond_to? subfield
+                obj.send(subfield)
+              else
+                model.all
+              end
+            }
+          end
+
         @obj = nil
         @args = nil
         @ctx = nil
