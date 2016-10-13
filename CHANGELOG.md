@@ -1,6 +1,11 @@
 # GraphQL::Rails::Resolver
 ## CHANGELOG
 
+### Version 0.2.5
+Adds heirarchal resolution strategy
+
+The base resolver will now check for the field's resolver method on the object. If resolving `Child` on `Parent` it will now default to `Parent.child` instead of `Child.all`
+
 ### Version 0.2.4
 Adds ID resolution for non-primary ID field arguments
 Adds `get_field_args` to get type declarations for arguments
