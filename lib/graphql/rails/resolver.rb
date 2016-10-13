@@ -1,7 +1,7 @@
 module GraphQL
   module Rails
     class Resolver
-      VERSION = '0.2.4'
+      VERSION = '0.2.5'
 
       attr_accessor :resolvers
 
