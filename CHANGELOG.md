@@ -1,6 +1,9 @@
 # GraphQL::Rails::Resolver
 ## CHANGELOG
 
+### Version 0.2.6
+Fixes issue where resolution may skip over :where
+
 ### Version 0.2.5
 Adds heirarchal resolution strategy
 

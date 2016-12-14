@@ -74,7 +74,8 @@ module GraphQL
                 else
                   raise ArgumentError, "Unable to resolve parameter of type #{method.class} in #{self}"
                 end
-              elsif params.size < 1
+              else
+                # Resolve ID arguments
                 if is_arg_id_type? arg
                   value = resolve_id(value)
                 end
@@ -83,7 +84,7 @@ module GraphQL
                   @result = send(arg, value)
                 elsif @result.respond_to? arg and params[:where].present? == false
                   @result = @result.send(arg, value)
-                else
+                elsif @result.respond_to? :where
                   attribute =
                     if params[:where].present?
                       params[:where]
@@ -91,12 +92,16 @@ module GraphQL
                       arg
                     end
 
+                  unless @result.has_attribute?(attribute)
+                    raise ArgumentError, "Unable to resolve attribute #{attribute} on #{@result}"
+                  end
+
                   hash = {}
                   hash[attribute] = value
                   @result = @result.where(hash)
+                else
+                  raise ArgumentError, "Unable to resolve argument #{arg} in #{self}"
                 end
-              else
-                raise ArgumentError, "Unable to resolve argument #{arg} in #{self}"
               end
             end
           end
@@ -201,28 +206,28 @@ module GraphQL
           @resolvers
         end
 
-        def resolve(field, definition=nil, **otherArgs)
+        def resolve(arg, definition=nil, **otherArgs)
           @resolvers ||= {}
-          @resolvers[field] ||= []
-          @resolvers[field].push([definition, otherArgs])
+          @resolvers[arg] ||= []
+          @resolvers[arg].push([definition, otherArgs])
         end
 
-        def resolve_where(field)
+        def resolve_where(arg)
           warn "[DEPRECATION] `resolve_where` is deprecated.  Please use `resolve` instead."
-          resolve(field)
+          resolve(arg)
         end
 
-        def resolve_scope(field, test=nil, scope_name: nil, with_value: false)
+        def resolve_scope(arg, test=nil, scope_name: nil, with_value: false)
           warn "[DEPRECATION] `resolve_scope` is deprecated.  Please use `resolve` instead."
           test = lambda { |value| value.present? } if test.nil?
-          scope_name = field if scope_name.nil?
+          scope_name = arg if scope_name.nil?
 
-          resolve(field, :scope => -> (value) { test.call(value) ? scope_name : nil }, :with_value => with_value)
+          resolve(arg, :scope => -> (value) { test.call(value) ? scope_name : nil }, :with_value => with_value)
         end
 
-        def resolve_method(field)
+        def resolve_method(arg)
           warn "[DEPRECATION] `resolve_method` is deprecated.  Please use `resolve` instead."
-          resolve(field)
+          resolve(arg)
         end
       end
     end
