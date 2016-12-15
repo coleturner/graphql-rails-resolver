@@ -1,7 +1,7 @@
 module GraphQL
   module Rails
     class Resolver
-      VERSION = '0.2.7'
+      VERSION = '0.2.8'
 
       attr_accessor :resolvers
 
@@ -43,13 +43,14 @@ module GraphQL
           @result = resolve_id(args[@id_field])
         end
 
-        @resolvers.each do |arg,resolvers|
+        @resolvers.each do |arg, resolvers|
           if args.key? arg
-            value = args[arg]
+            original_value = args[arg]
 
             resolvers.each do |method, params|
-              next unless condition_met?(params.fetch(:if, nil), true, value)
-              next unless condition_met?(params.fetch(:unless, nil), false, value)
+              next unless condition_met?(params.fetch(:if, nil), true, original_value)
+              next unless condition_met?(params.fetch(:unless, nil), false, original_value)
+              value = map_value(params.fetch(:map, nil), original_value)
 
               # Match scopes
               if params.key? :scope
@@ -203,6 +204,16 @@ module GraphQL
           self.send(conditional, value) == expectation
         else
           true
+        end
+      end
+
+      def map_value(mapper, value)
+        if mapper.respond_to? :call
+          mapper.call(value)
+        elsif (mapper.is_a?(Symbol) || mapper.is_a?(String)) && self.respond_to?(mapper)
+          self.send(mapper, value)
+        else
+          value
         end
       end
 

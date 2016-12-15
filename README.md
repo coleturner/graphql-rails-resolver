@@ -96,6 +96,9 @@ class Post < GraphQL::Rails::Resolver
   # Condition resolution on title being present using the `unless` option
   resolve :title, unless: -> (value) { value.blank? }
 
+  # Resolve :title but preprocess the argument value first (strip leading/trailing spaces)
+  resolve :title, map: -> (value) { value.strip }
+
   # Resolve :featured argument with default test: if argument `featured` is present
   resolve :featured, :scope => :featured
 
@@ -152,7 +155,22 @@ def check_value(value)
 end
 ```
     
+### Preprocessing argument values
+You can alter an argument's value before it is being resolved. To do this, pass a method
+name (as a symbol or a string), or a `Proc` (or lambda expression) to the `:map` option
+of `resolve`. The method or `Proc` you specify is then passed the original argument value
+and expected to return the value that shall be used for resolution.
+ 
+This comes in handy in various cases, for instance when you need to make sure that an
+argument value is well-defined:
 
+```
+resolve :offset, map: -> (value) { [value, 0].max }
+resolve :limit, map: -> (value) { [value, 100].min }
+```
+
+The above example guarantees that the offset is never negative and that the limit is
+capped at a reasonable value (for [security reasons](https://rmosolgo.github.io/graphql-ruby/queries/security)).
 
 ### Detecting the Model
 The resolver will automatically resolve to a Rails model with the same name. This behavior can be overridden by defining a `Post#model` which returns the appropriate model.
