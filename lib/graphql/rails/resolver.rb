@@ -48,6 +48,9 @@ module GraphQL
             value = args[arg]
 
             resolvers.each do |method, params|
+              next unless condition_met?(params.fetch(:if, nil), true, value)
+              next unless condition_met?(params.fetch(:unless, nil), false, value)
+
               # Match scopes
               if params.key? :scope
                 scope_name = params[:scope]
@@ -190,6 +193,16 @@ module GraphQL
           value.compact.map { |v| @ctx.schema.object_from_id(v, @ctx) }.compact
         else
           @ctx.schema.object_from_id(value, @ctx)
+        end
+      end
+
+      def condition_met?(conditional, expectation, value)
+        if conditional.respond_to? :call
+          conditional.call(value) == expectation
+        elsif (conditional.is_a?(Symbol) || conditional.is_a?(String)) && self.respond_to?(conditional)
+          self.send(conditional, value) == expectation
+        else
+          true
         end
       end
 

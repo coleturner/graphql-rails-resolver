@@ -92,6 +92,9 @@ class Post < GraphQL::Rails::Resolver
   resolve :title
   resolve :createdAt, :where => :created_at
   resolve :updatedAt, :where => :updated_at
+  
+  # Condition resolution on title being present using the `unless` option
+  resolve :title, unless: -> (value) { value.blank? }
 
   # Resolve :featured argument with default test: if argument `featured` is present
   resolve :featured, :scope => :featured
@@ -127,7 +130,28 @@ In the examples above, the three primary arguments to `resolve` are:
 
 Alternatively you can specify a symbol representing a method name: (ie: `resolve :arg_1, :custom_method`). The resolver will use it's own method if it exists, or else it will call the method on the object itself.
 
+### Conditional resolution
+Sometimes it is necessary to condition resolution of an argument on its value. For instance, by default
+an empty string as an argument matches only records whose corresponding field is an empty string as well.
+However, you may want an empty argument to mean that this argument should be ignored and all records shall
+be matched. To achieve this, you would condition resolution of that argument on it being not empty.
+    
+You can condition resolution by passing the `:if` or `:unless` option to the `resolve` method. This option
+can take a method name (as a symbol or a string), or a `Proc` (or lambda expression for that matter), which
+will be called with the argument's value:
 
+```
+resolve :tagline, unless: -> (value) { value.blank? }
+
+resolve :tagline, if: -> (value) { value.present? }
+
+resolve :tagline, if: :check_value
+
+def check_value(value)
+   value.present?
+end
+```
+    
 
 
 ### Detecting the Model
@@ -162,3 +186,4 @@ I wanted to release this utility for the hopes of sparking interest in Rails int
 # Credits
 - Cole Turner ([@colepatrickturner](https://github.com/colepatrickturner))
 - Peter Salanki ([@salanki](https://github.com/salanki))
+- Jonas Schwertfeger ([@jschwertfeger](https://github.com/jschwertfeger))

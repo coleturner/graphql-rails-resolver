@@ -1,6 +1,9 @@
 # GraphQL::Rails::Resolver
 ## CHANGELOG
 
+### Version 0.2.7
+Added conditional resolution by means of `:if` and `:unless` options 
+
 ### Version 0.2.6
 Fixes issue where resolution may skip over :where
 
