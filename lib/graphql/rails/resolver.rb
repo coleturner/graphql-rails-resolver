@@ -1,7 +1,7 @@
 module GraphQL
   module Rails
     class Resolver
-      VERSION = '0.2.8'
+      VERSION = '0.2.9'
 
       attr_accessor :resolvers
 
@@ -173,8 +173,9 @@ module GraphQL
       end
 
       def is_field_id_type?(field)
-         field == ::GraphQL::ID_TYPE or
-              (field.kind == ::GraphQL::TypeKinds::LIST and field.of_type == ::GraphQL::ID_TYPE)
+         field == ::GraphQL::ID_TYPE ||
+              (field.kind == ::GraphQL::TypeKinds::LIST && field.of_type == ::GraphQL::ID_TYPE) ||
+              (field.kind == ::GraphQL::TypeKinds::NON_NULL && field.of_type == ::GraphQL::ID_TYPE)
       end
 
       def is_arg_id_type?(key)

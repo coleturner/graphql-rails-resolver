@@ -1,6 +1,9 @@
 # GraphQL::Rails::Resolver
 ## CHANGELOG
 
+### Version 0.2.9
+Accept the non-null ID type (!ID) as an ID type
+
 ### Version 0.2.8
 Added argument value preprocessing using `:map` option
 
