@@ -134,7 +134,7 @@ module GraphQL
       end
 
       def has_id_argument?
-        @ctx.irep_node.definitions.any? do |type_defn, field_defn|
+        @ctx.irep_node.definitions.any? do |field_defn|
           if field_defn.name === field_name
             field_defn.arguments.any? do |k,v|
               is_field_id_type?(v.type)
@@ -156,11 +156,11 @@ module GraphQL
       end
 
       def connection?
-        @ctx.irep_node.definitions.all? { |type_defn, field_defn| field_defn.resolve_proc.is_a?(GraphQL::Relay::ConnectionResolve) }
+        @ctx.irep_node.definitions.all? { |field_defn| field_defn.resolve_proc.is_a?(GraphQL::Relay::ConnectionResolve) }
       end
 
       def list?
-        @ctx.irep_node.definitions.all? { |type_defn, field_defn| field_defn.type.kind.eql?(GraphQL::TypeKinds::LIST) }
+        @ctx.irep_node.definitions.all? { |field_defn| field_defn.type.kind.eql?(GraphQL::TypeKinds::LIST) }
       end
 
       def get_field_args
