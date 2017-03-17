@@ -5,24 +5,23 @@ module GraphQL
 
       attr_accessor :resolvers
 
+      def self.default_resolve_proc
+        Proc.new { |obj|
+          subfield = model.name.underscore.pluralize
+          if obj.respond_to? subfield
+            obj.send(subfield)
+          else
+            model.all
+          end
+        }
+      end
+
       def initialize(callable=nil)
-        unless callable.nil?
+        if callable.present?
           raise ArgumentError, "Resolver requires a callable type or nil" unless callable.respond_to? :call
         end
 
-        @callable =
-          if callable.present?
-            callable
-          else
-            Proc.new { |obj|
-              subfield = model.name.underscore.pluralize
-              if obj.respond_to? subfield
-                obj.send(subfield)
-              else
-                model.all
-              end
-            }
-          end
+        @callable ||= self.class.default_resolve_proc
 
         @obj = nil
         @args = nil
@@ -47,65 +46,21 @@ module GraphQL
           if args.key? arg
             original_value = args[arg]
 
-            resolvers.each do |method, params|
+            resolvers.each do |definition, params|
               next unless condition_met?(params.fetch(:if, nil), true, original_value)
               next unless condition_met?(params.fetch(:unless, nil), false, original_value)
               value = map_value(params.fetch(:map, nil), original_value)
 
               # Match scopes
               if params.key? :scope
-                scope_name = params[:scope]
-                scope_name = scope_name.call(value) if scope_name.respond_to? :call
-
-                scope_args = []
-                scope_args.push(value) if params.key? :with_value and params[:with_value] == true
-
-                @result = @result.send(scope_name, *scope_args) unless scope_name.nil?
+                @result = resolve_scope_value(@result, argument: arg, value: value, scope: params[:scope], with_value: params[:with_value])
               # Match custom methods
               elsif params.key? :method
                 @result = send(params[:method], value)
-              elsif method.present?
-                # Match first param
-                if method.respond_to? :call
-                  # Match implicit blocks
-                  @result = method.call(value)
-                elsif self.respond_to? method
-                  # Match method name to current resolver class
-                  @result = send(method, value)
-                elsif @result.respond_to? method
-                  # Match method name to object
-                  @result = @result.send(method, value)
-                else
-                  raise ArgumentError, "Unable to resolve parameter of type #{method.class} in #{self}"
-                end
+              elsif definition.present?
+                @result = resolve_methodic_value(@result, argument: arg, value: value, method: definition, params: params)
               else
-                # Resolve ID arguments
-                if is_arg_id_type? arg
-                  value = resolve_id(value)
-                end
-
-                if self.respond_to? arg and params[:where].present? == false
-                  @result = send(arg, value)
-                elsif @result.respond_to? arg and params[:where].present? == false
-                  @result = @result.send(arg, value)
-                elsif @result.respond_to? :where
-                  attribute =
-                    if params[:where].present?
-                      params[:where]
-                    else
-                      arg
-                    end
-
-                  unless @result.has_attribute?(attribute)
-                    raise ArgumentError, "Unable to resolve attribute #{attribute} on #{@result}"
-                  end
-
-                  hash = {}
-                  hash[attribute] = value
-                  @result = @result.where(hash)
-                else
-                  raise ArgumentError, "Unable to resolve argument #{arg} in #{self}"
-                end
+                @result = resolve_argument_value(@result, argument: arg, value: value)
               end
             end
           end
@@ -118,6 +73,62 @@ module GraphQL
         @ctx = nil
 
         result
+      end
+
+      def resolve_scope_value(result, argument:, value:, scope:, with_value: nil)
+        scope_name = scope
+        scope_name = scope_name.call(value) if scope_name.respond_to? :call
+
+        scope_args = []
+        scope_args.push(value) if with_value == true
+
+        result.send(scope_name, *scope_args) unless scope_name.nil?
+      end
+
+      def resolve_methodic_value(result, argument:, value:, method:)
+        # Match first param
+        if method.respond_to? :call
+          # Match implicit blocks
+          method.call(value)
+        elsif self.respond_to? method
+          # Match method name to current resolver class
+          send(method, value)
+        elsif result.respond_to? method
+          # Match method name to object
+          result.send(method, value)
+        else
+          raise ArgumentError, "Unable to resolve parameter of type #{method.class} in #{self}"
+        end
+      end
+
+      def resolve_argument_value(result, argument:, value:, params:)
+        # Resolve ID arguments
+        if is_arg_id_type? argument
+          value = resolve_id(value)
+        end
+
+        if self.respond_to? argument and params[:where].present? == false
+          send(argument, value)
+        elsif result.respond_to? argument and params[:where].present? == false
+          result.send(argument, value)
+        elsif result.respond_to? :where
+          attribute =
+            if params[:where].present?
+              params[:where]
+            else
+              argument
+            end
+
+          unless result.has_attribute?(attribute)
+            raise ArgumentError, "Unable to resolve attribute #{attribute} on #{@result}"
+          end
+
+          hash = {}
+          hash[attribute] = value
+          result.where(hash)
+        else
+          raise ArgumentError, "Unable to resolve argument #{argument} in #{self}"
+        end
       end
 
       def payload
