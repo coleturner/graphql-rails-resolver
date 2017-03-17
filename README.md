@@ -92,7 +92,7 @@ class Post < GraphQL::Rails::Resolver
   resolve :title
   resolve :createdAt, :where => :created_at
   resolve :updatedAt, :where => :updated_at
-  
+
   # Condition resolution on title being present using the `unless` option
   resolve :title, unless: -> (value) { value.blank? }
 
@@ -138,7 +138,7 @@ Sometimes it is necessary to condition resolution of an argument on its value. F
 an empty string as an argument matches only records whose corresponding field is an empty string as well.
 However, you may want an empty argument to mean that this argument should be ignored and all records shall
 be matched. To achieve this, you would condition resolution of that argument on it being not empty.
-    
+
 You can condition resolution by passing the `:if` or `:unless` option to the `resolve` method. This option
 can take a method name (as a symbol or a string), or a `Proc` (or lambda expression for that matter), which
 will be called with the argument's value:
@@ -154,13 +154,13 @@ def check_value(value)
    value.present?
 end
 ```
-    
+
 ### Preprocessing argument values
 You can alter an argument's value before it is being resolved. To do this, pass a method
 name (as a symbol or a string), or a `Proc` (or lambda expression) to the `:map` option
 of `resolve`. The method or `Proc` you specify is then passed the original argument value
 and expected to return the value that shall be used for resolution.
- 
+
 This comes in handy in various cases, for instance when you need to make sure that an
 argument value is well-defined:
 
@@ -205,3 +205,4 @@ I wanted to release this utility for the hopes of sparking interest in Rails int
 - Cole Turner ([@colepatrickturner](https://github.com/colepatrickturner))
 - Peter Salanki ([@salanki](https://github.com/salanki))
 - Jonas Schwertfeger ([@jschwertfeger](https://github.com/jschwertfeger))
+- Joshua Coffee ([@joshualcoffee](https://github.com/joshualcoffee))
