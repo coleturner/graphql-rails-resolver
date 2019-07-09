@@ -9,7 +9,7 @@ A utility to ease graphql-ruby integration into a Rails project. This resolver o
 
 Take for example the following Rails model:
 
-```
+```ruby
 class Post < ApplicationRecord
   belongs_to :author
   has_many :comments
@@ -27,7 +27,7 @@ end
 
 The standard implementation for resolving a `Post` is as follows:
 
-```
+```ruby
 field :post, PostType do
   argument :is_public, types.Boolean, default_value: true
   resolve -> (obj, args, ctx) {
@@ -42,7 +42,8 @@ This implementation is cumbersome and when your application grows it will become
 Using the pattern from this article, our Field becomes much simpler:
 
 **/app/graph/types/query_type.rb**
-```
+
+```ruby
 field :post, PostType do
   argument :is_public, types.Boolean, default_value: true
   resolve Resolvers::Post.new
@@ -50,7 +51,8 @@ end
 ```
 
 **/app/graph/resolvers/post.rb**
-```
+
+```ruby
 module Resolvers
   class Post
     def call(_, arguments, _)
@@ -66,6 +68,7 @@ module Resolvers
   end
 end
 ```
+
 This solution addresses code re-use, but these series of conditionals do not allow you to resolve more than one argument, and it may become difficult to maintain this imperative approach.
 
 
@@ -74,15 +77,15 @@ This solution addresses code re-use, but these series of conditionals do not all
 
 To begin, we install the gem by adding it to our `Gemfile`:
 
-`
+```ruby
 gem 'graphql-rails-resolver'
-`
+```
 
 This will load a class by the name of `GraphQL::Rails::Resolver`
 
 Take the Resolver from the previous example. Using `GraphQL::Rails::Resolver`, we inherit and use declarations for arguments and how they will be resolved. These declarations will be mapped to the attributes on the resolved model.
 
-```
+```ruby
 # Class name must match the Rails model name exactly.
 
 class Post < GraphQL::Rails::Resolver
@@ -143,7 +146,7 @@ You can condition resolution by passing the `:if` or `:unless` option to the `re
 can take a method name (as a symbol or a string), or a `Proc` (or lambda expression for that matter), which
 will be called with the argument's value:
 
-```
+```ruby
 resolve :tagline, unless: -> (value) { value.blank? }
 
 resolve :tagline, if: -> (value) { value.present? }
@@ -164,7 +167,7 @@ and expected to return the value that shall be used for resolution.
 This comes in handy in various cases, for instance when you need to make sure that an
 argument value is well-defined:
 
-```
+```ruby
 resolve :offset, map: -> (value) { [value, 0].max }
 resolve :limit, map: -> (value) { [value, 100].min }
 ```
@@ -174,7 +177,8 @@ capped at a reasonable value (for [security reasons](https://rmosolgo.github.io/
 
 ### Detecting the Model
 The resolver will automatically resolve to a Rails model with the same name. This behavior can be overridden by defining a `Post#model` which returns the appropriate model.
-```
+
+```ruby
 def model
    ::AnotherModel
 end
@@ -182,7 +186,8 @@ end
 
 ### Find Model by ID
 `GraphQL::Rails::Resolver` includes the ability to resolve an object by ID (or a list of ID types). Using the following method, by default the resolver will find a model by **Schema.object_from_id(value)**.
-```
+
+```ruby
 def object_from_id(value=...)
   ...
 end
@@ -191,12 +196,12 @@ end
 
 ### Override Default Scope
 The default behavior is to use `Model.all` to scope the resolution. This scope can be changed by providing a block or lambda to the class instance:
-```
+
+```ruby
 Resolvers::Post.new(Proc.new {
 	::Post.where(:created_at => ...)
 })
 ```
-
 
 # Needs Help
 I wanted to release this utility for the hopes of sparking interest in Rails integration with `graphql-ruby`. If you wish to contribute to this project, any pull request is warmly welcomed.
